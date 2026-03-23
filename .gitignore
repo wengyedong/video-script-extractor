@@ -1,0 +1,47 @@
+# Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+env.local/
+ENV/
+.env/
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# 编辑器相关
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 项目特定文件
+# 生成的音频文件
+*.wav
+
+# 测试文件
+test_output/
+test/
+
+.trae/
+
+# 模型文件（如果下载到本地）
+models/
+
+# 临时文件
+*.tmp
+*.temp
+
+# 日志文件
+*.log

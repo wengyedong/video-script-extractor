@@ -1,0 +1,7 @@
+# Python 依赖项
+faster-whisper
+tqdm
+torch
+
+# 系统依赖项（需要单独安装）
+# ffmpeg - 用于音频提取
