@@ -5,7 +5,7 @@
 ## 功能特性
 
 - 🎯 **高效语音识别**：使用 faster-whisper 模型，支持多语言自动检测
-- 📊 **多格式输出**：生成 JSON 和 Markdown 两种格式的转录结果
+- 📊 **多格式输出**：生成 JSON、Markdown 和原始 Markdown 三种格式的转录结果
 - ⚡ **硬件加速**：自动检测 CUDA 可用性，优先使用 GPU 加速
 - 🎬 **音频提取**：内置 ffmpeg 调用，自动从视频中提取音频
 - 📱 **时间戳**：为每个转录片段添加精确的时间戳
@@ -105,6 +105,14 @@ python video_extractor.py input_video.mp4 --output-dir output/videos/transcripti
 ### [00:00 → 00:05]
 这是一段测试文本。
 ```
+
+### 3. 原始 Markdown 文件 (`input_video_raw.md`)
+
+```markdown
+这是一段测试文本。
+```
+
+原始 Markdown 文件包含所有转录文本的纯文本版本，没有时间戳，适合直接阅读或用于其他文本处理。
 
 ## 依赖项
 

@@ -37,11 +37,15 @@ def check_environment():
         print("⚠ torch 未安装，将使用 CPU")
         return "cpu", "int8"
 
-def extract_audio(video_path):
+def extract_audio(video_path, output_dir):
     """从视频中提取音频"""
     # 生成输出文件路径
     base_name = os.path.splitext(video_path)[0]
-    audio_path = f"{base_name}.wav"
+    audio_path = os.path.join(output_dir, f"{base_name}.wav")
+
+    # 清除旧的音频文件
+    if os.path.exists(audio_path):
+        os.remove(audio_path)
     
     # 构建 ffmpeg 命令
     cmd = [
@@ -92,20 +96,11 @@ def transcribe_audio(audio_path, device, compute_type):
     print(f"✓ 语音识别完成，识别到 {len(transcription)} 个片段")
     return transcription, info
 
-def generate_output_files(video_path, transcription, info, output_dir=None):
+def generate_output_files(video_path, transcription, info, output_dir):
     """生成输出文件"""
     base_name = os.path.splitext(os.path.basename(video_path))[0]
     
-    # 确定输出目录
-    if output_dir:
-        # 确保输出目录存在
-        os.makedirs(output_dir, exist_ok=True)
-        # 生成输出文件路径
-        json_path = os.path.join(output_dir, f"{base_name}.json")
-    else:
-        # 使用默认目录（视频文件所在目录）
-        base_dir = os.path.dirname(video_path)
-        json_path = os.path.join(base_dir, f"{base_name}.json")
+    json_path = os.path.join(output_dir, f"{base_name}.json")
     json_data = {
         "video_path": video_path,
         "duration": info.duration,
@@ -113,6 +108,10 @@ def generate_output_files(video_path, transcription, info, output_dir=None):
         "segments": transcription
     }
     
+    # 清除旧的 JSON 文件
+    if os.path.exists(json_path):
+        os.remove(json_path)
+
     try:
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
@@ -122,10 +121,10 @@ def generate_output_files(video_path, transcription, info, output_dir=None):
         sys.exit(1)
     
     # 生成 Markdown 文件
-    if output_dir:
-        md_path = os.path.join(output_dir, f"{base_name}.md")
-    else:
-        md_path = os.path.join(base_dir, f"{base_name}.md")
+    md_path = os.path.join(output_dir, f"{base_name}.md")
+    raw_md_path = os.path.join(output_dir, f"{base_name}_raw.md")
+
+    raw_md_content = ""
     md_content = f"# 视频转录结果\n\n"
     md_content += f"**视频路径**: {video_path}\n"
     md_content += f"**时长**: {info.duration:.2f} 秒\n"
@@ -137,6 +136,11 @@ def generate_output_files(video_path, transcription, info, output_dir=None):
         end_time = format_time(segment["end"])
         md_content += f"### [{start_time} → {end_time}]\n"
         md_content += f"{segment['text']}\n\n"
+        raw_md_content += f"{segment['text']}" + "。" if info.language == 'zh' else "."
+    
+    # 清除旧的 Markdown 文件
+    if os.path.exists(md_path):
+        os.remove(md_path)
     
     try:
         with open(md_path, "w", encoding="utf-8") as f:
@@ -146,7 +150,20 @@ def generate_output_files(video_path, transcription, info, output_dir=None):
         print(f"✗ Markdown 文件生成失败: {e}")
         sys.exit(1)
     
-    return json_path, md_path
+    # 清除旧的原始 Markdown 文件
+    if os.path.exists(raw_md_path):
+        os.remove(raw_md_path)
+    
+    # 生成原始 Markdown 文件
+    try:
+        with open(raw_md_path, "w", encoding="utf-8") as f:
+            f.write(raw_md_content)
+        print(f"✓ 原始 Markdown 文件已生成: {raw_md_path}")
+    except Exception as e:
+        print(f"✗ 原始 Markdown 文件生成失败: {e}")
+        sys.exit(1)
+    
+    return json_path, md_path, raw_md_path 
 
 def format_time(seconds):
     """将秒数格式化为时分秒"""
@@ -174,15 +191,32 @@ def video_extractor(video_path, output_dir=None):
     
     # 步骤 1: 环境检查
     device, compute_type = check_environment()
+
+    if output_dir is None:
+        output_dir = os.path.dirname(video_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
     
-    # 步骤 2: 音频提取
-    audio_path = extract_audio(video_path)
+    try:
+        # 步骤 2: 音频提取
+        audio_path = extract_audio(video_path, output_dir)
+    except Exception as e:
+        print(f"✗ 音频提取失败: {e}")
+        sys.exit(1)
     
-    # 步骤 3: 语音识别
-    transcription, info = transcribe_audio(audio_path, device, compute_type)
+    try:
+        # 步骤 3: 语音识别
+        transcription, info = transcribe_audio(audio_path, device, compute_type)
+    except Exception as e:
+        print(f"✗ 语音识别失败: {e}")
+        sys.exit(1)
     
-    # 步骤 4: 生成输出文件
-    json_path, md_path = generate_output_files(video_path, transcription, info, output_dir)
+    try:
+        # 步骤 4: 生成输出文件
+        json_path, md_path, raw_md_path = generate_output_files(video_path, transcription, info, output_dir)
+    except Exception as e:
+        print(f"✗ 生成输出文件失败: {e}")
+        sys.exit(1)
     
     print("\n✓ 所有任务完成！")
 
